@@ -1,0 +1,63 @@
+---
+title: 'Final Project: Practical Machine Learning'
+author: "Aaron L."
+date: "December 11, 2016"
+output: html_document
+---
+###Load Relevant Packages
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+###Load Data
+
+```{r}
+training_set <- read.csv("~/Desktop/Practical Machine Learning Project/pml-training.csv")
+validation_set <- read.csv("~/Desktop/Practical Machine Learning Project/pml-testing.csv")
+```
+
+###Split Data
+
+Data is split between training (75%) and test (25%)
+
+```{r}
+set.seed(100)
+training_sample <- createDataPartition(y=training_set$classe, p=0.75, list=FALSE)
+training <- training_set[training_sample, ]
+testing <- training_set[-training_sample, ]
+```
+
+###Prepare Data
+
+Non-zero features are selected from the dataset in order for valid class prediction.
+
+```{r}
+zeros <- sapply(names(validation_set), function(x) all(is.na(validation_set[,x])==TRUE))
+valid <- names(zeros)[zeros==FALSE]
+valid <- valid[-(1:7)]
+valid <- valid[1:(length(valid)-1)]
+```
+
+###Build Model & Validate
+
+For this particular project, I decided to test the random forest model first and check out the confusion matrix. If the results did not appear accurate, other models would be ran; however, as shown, the random forest model proved to be incredible accurate (99% in all important criteria) and therefor it seemed unnecessary to test further. 
+
+```{r}
+modelFit <- train(classe ~ ., data=training[, c('classe', valid)],method='rf', ntree=100)
+predictRF <- predict(modelFit, newdata=testing)
+confusionRF <- confusionMatrix(predictRF, testing$classe)
+confusionRF
+```
+
+
+I then use this model to test the validation set. 
+
+###Run Model Against Validation Set
+```{r}
+validationPrediction <- predict(modelFit, newdata=validation_set)
+predictionResults <- data.frame(problem_id=validation_set$problem_id, 
+                                result=validationPrediction)
+predictionResults
+```
